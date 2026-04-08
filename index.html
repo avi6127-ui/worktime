@@ -3,34 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>WorkTime Pro - Fixed UI</title>
+    <title>WorkTime Pro - Final Sync Fix</title>
     <style>
         :root { --primary: #6C5CE7; --bg: #F0F3F7; --card: #FFFFFF; --danger: #FF7675; --secondary: #00B894; --text: #2D3436; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
-        /* יישור הממשק למרכז - קריטי לאייפון */
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; width: 100%; min-height: 100vh; }
         .container { width: 100%; max-width: 480px; padding: 15px; display: flex; flex-direction: column; align-items: center; }
-        
         .card { background: var(--card); border-radius: 20px; padding: 18px; box-shadow: 0 8px 20px rgba(0,0,0,0.06); margin-bottom: 15px; width: 100%; }
         .edit-active { border: 2px solid var(--secondary); background: #f0fffb; }
-        
-        input, select { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #DDD; margin-bottom: 10px; text-align: center; font-size: 16px; background: #fff; appearance: none; }
+        input, select { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #DDD; margin-bottom: 10px; text-align: center; font-size: 16px; background: #fff; }
         .time-row { display: flex; gap: 8px; margin-bottom: 10px; width: 100%; }
         .time-row div { flex: 1; }
         .time-row label { display: block; font-size: 11px; color: var(--primary); font-weight: bold; margin-bottom: 4px; text-align: center; }
-        
-        .btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-weight: 800; font-size: 16px; cursor: pointer; color: white; transition: 0.2s; }
+        .break-container { background: #f8f9fd; padding: 12px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: center; align-items: center; gap: 10px; border: 1px dashed var(--primary); width: 100%; }
+        .btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-weight: 800; font-size: 16px; cursor: pointer; color: white; }
         .btn-save { background: var(--primary); }
-        .btn-cancel { background: #888; margin-top: 5px; }
-        
         .summary-box { background: linear-gradient(135deg, var(--primary), #8E78FF); color: white; padding: 18px; border-radius: 20px; text-align: center; margin-bottom: 15px; width: 100%; }
         .history-item { background: white; padding: 12px; border-radius: 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; width: 100%; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        
         #syncStatus { font-size: 10px; color: #888; margin-bottom: 5px; text-align: center; width: 100%; }
         #loginScreen, #appScreen, #adminScreen { display: none; width: 100%; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; width: 100%; }
-        .job-summary-tag { display: inline-block; background: #eee; font-size: 11px; padding: 3px 8px; border-radius: 6px; margin: 2px; }
+        .job-summary-list { margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; display: flex; flex-wrap: wrap; gap: 4px; }
+        .job-tag { font-size: 11px; background: #eee; color: #333; padding: 2px 8px; border-radius: 6px; }
     </style>
 </head>
 <body>
@@ -64,12 +58,12 @@
                 <div><label>כניסה</label><input type="time" id="startTime"></div>
                 <div><label>יציאה</label><input type="time" id="endTime"></div>
             </div>
-            <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:12px; background:#f9f9f9; padding:10px; border-radius:10px; width:100%;">
+            <div class="break-container">
                 <input type="checkbox" id="takeBreak" style="width:20px; height:20px;">
-                <label for="takeBreak" style="font-weight:bold;">קיזוז 30 דק' הפסקה</label>
+                <label for="takeBreak" style="font-weight:bold;">קיזוז 30 דקות הפסקה</label>
             </div>
             <button id="mainBtn" class="btn btn-save" onclick="saveShift()">שמור משמרת</button>
-            <button id="cancelEditBtn" class="btn btn-cancel" style="display:none;" onclick="cancelEdit()">ביטול עריכה</button>
+            <button id="cancelEditBtn" class="btn" style="display:none; background:#888; margin-top:5px;" onclick="cancelEdit()">ביטול עריכה</button>
             <div id="adminLinkArea"></div>
         </div>
         <div id="historyList"></div>
@@ -79,7 +73,7 @@
         <div class="card" style="background:#2d3436; color:white; text-align:center;">
             <small>סה"כ שכר ברוטו (כולם)</small>
             <h2 id="totalAllSalary" style="color:var(--secondary); margin:5px 0;">₪0</h2>
-            <small id="totalAllHours">0 שעות מצטברות</small>
+            <small id="totalAllHours">0 שעות</small>
         </div>
         <div id="adminDataList"></div>
         <button class="btn" style="background:#2D3436; margin-top:10px;" onclick="showApp()">חזרה</button>
@@ -97,13 +91,13 @@
 
     async function pullData() {
         try {
-            const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.binId}/latest?t=${Date.now()}`, {
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.binId}/latest?nocache=${Date.now()}`, {
                 headers: { 'X-Master-Key': CONFIG.apiKey, 'X-Bin-Meta': 'false' }
             });
             if (res.ok) {
                 db = await res.json();
                 localStorage.setItem('wt_db', JSON.stringify(db));
-                document.getElementById('syncStatus').innerText = "✅ מסונכרן";
+                document.getElementById('syncStatus').innerText = "✅ מחובר ומסונכרן";
                 return true;
             }
         } catch (e) { document.getElementById('syncStatus').innerText = "⚠️ אופליין"; }
@@ -111,13 +105,15 @@
     }
 
     async function syncDB() {
+        document.getElementById('syncStatus').innerText = "🔄 מעדכן ענן...";
         try {
             await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.binId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'X-Master-Key': CONFIG.apiKey },
                 body: JSON.stringify(db)
             });
-        } catch(e) {}
+            document.getElementById('syncStatus').innerText = "✅ נשמר בהצלחה";
+        } catch(e) { document.getElementById('syncStatus').innerText = "❌ שגיאת שמירה"; }
     }
 
     async function init() {
@@ -138,6 +134,7 @@
     }
 
     async function showApp() {
+        await pullData();
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('adminScreen').style.display = 'none';
         document.getElementById('appScreen').style.display = 'block';
@@ -154,6 +151,7 @@
         
         let sT = new Date(`${date}T${start}`), eT = new Date(`${date}T${end}`);
         if (eT <= sT) eT.setDate(eT.getDate() + 1);
+        
         let diff = (eT - sT) / 3600000;
         const hasBreak = document.getElementById('takeBreak').checked;
         if (hasBreak) diff = Math.max(0, diff - 0.5);
@@ -170,6 +168,7 @@
             db[currentUser].shifts.push(shiftData);
         }
         
+        document.getElementById('takeBreak').checked = false;
         renderHistory(); syncDB();
     }
 
@@ -210,8 +209,8 @@
             <div class="history-item">
                 <div><b>${s.job}</b><br><small>${s.date} ${s.hasBreak ? '(פ)' : ''}</small></div>
                 <div style="text-align:left;"><b>₪${s.total}</b><br><small>${s.hours} ש'</small>
-                <button style="border:none; background:none; color:blue; cursor:pointer;" onclick="editShift(${s.id})">✏️</button>
-                <button style="border:none; background:none; color:red; cursor:pointer;" onclick="deleteShift(${s.id})">🗑️</button></div>
+                <button style="border:none; background:none; color:blue;" onclick="editShift(${s.id})">✏️</button>
+                <button style="border:none; background:none; color:red;" onclick="deleteShift(${s.id})">🗑️</button></div>
             </div>`).reverse().join('');
     }
 
@@ -227,23 +226,24 @@
             const sMoney = sh.reduce((a,b) => a + parseFloat(b.total || 0), 0);
             const sHours = sh.reduce((a,b) => a + parseFloat(b.hours || 0), 0);
             
-            const jobSummary = {};
-            sh.forEach(s => jobSummary[s.job] = (jobSummary[s.job] || 0) + parseFloat(s.hours));
-            const jobHtml = Object.keys(jobSummary).map(j => `<span class="job-summary-tag">${j}: ${jobSummary[j].toFixed(1)}ש'</span>`).join('');
+            // חישוב סיכום לפי מקום עבודה לעובד
+            const jobMap = {};
+            sh.forEach(s => jobMap[s.job] = (jobMap[s.job] || 0) + parseFloat(s.hours));
+            const jobTags = Object.keys(jobMap).map(j => `<span class="job-tag">${j}: ${jobMap[j].toFixed(1)} ש'</span>`).join('');
 
             total += sMoney; totalH += sHours;
             return `<div class="card">
                 <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>${u}</span><span>₪${sMoney.toFixed(0)}</span></div>
-                <div style="margin:8px 0;">${jobHtml}</div>
-                <button class="btn" style="background:var(--primary); padding:8px; font-size:12px;" onclick="viewUser('${u}')">ערוך עובד</button>
+                <div class="job-summary-list">${jobTags}</div>
+                <button class="btn" style="background:var(--primary); padding:8px; font-size:12px; margin-top:10px;" onclick="viewUser('${u}')">צפה/ערוך</button>
             </div>`;
         }).join('');
         document.getElementById('totalAllSalary').innerText = `₪${total.toLocaleString()}`;
         document.getElementById('totalAllHours').innerText = `${totalH.toFixed(1)} שעות מצטברות`;
     }
 
-    function deleteShift(id) { if(confirm("למחוק?")) { db[currentUser].shifts = db[currentUser].shifts.filter(x => x.id !== id); renderHistory(); syncDB(); } }
     function viewUser(name) { currentUser = name; showApp(); }
+    function deleteShift(id) { if(confirm("למחוק?")) { db[currentUser].shifts = db[currentUser].shifts.filter(x => x.id !== id); renderHistory(); syncDB(); } }
     async function addUser() { const n = document.getElementById('newName').value.trim(), p = document.getElementById('newPass').value; if(n && p) { db[n] = { password: p, shifts: [] }; await syncDB(); renderUserSelect(); alert("נוסף!"); } }
     function logout() { currentUser = null; document.getElementById('loginScreen').style.display='block'; document.getElementById('appScreen').style.display='none'; }
     init();
