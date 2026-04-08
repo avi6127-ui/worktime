@@ -3,28 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>WorkTime Pro - Final Sync Fix</title>
+    <title>WorkTime Pro - Admin & Job Summary</title>
     <style>
         :root { --primary: #6C5CE7; --bg: #F0F3F7; --card: #FFFFFF; --danger: #FF7675; --secondary: #00B894; --text: #2D3436; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); margin: 0; display: flex; justify-content: center; width: 100%; min-height: 100vh; }
         .container { width: 100%; max-width: 480px; padding: 15px; display: flex; flex-direction: column; align-items: center; }
         .card { background: var(--card); border-radius: 20px; padding: 18px; box-shadow: 0 8px 20px rgba(0,0,0,0.06); margin-bottom: 15px; width: 100%; }
-        .edit-active { border: 2px solid var(--secondary); background: #f0fffb; }
         input, select { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #DDD; margin-bottom: 10px; text-align: center; font-size: 16px; background: #fff; }
         .time-row { display: flex; gap: 8px; margin-bottom: 10px; width: 100%; }
         .time-row div { flex: 1; }
-        .time-row label { display: block; font-size: 11px; color: var(--primary); font-weight: bold; margin-bottom: 4px; text-align: center; }
-        .break-container { background: #f8f9fd; padding: 12px; border-radius: 12px; margin-bottom: 15px; display: flex; justify-content: center; align-items: center; gap: 10px; border: 1px dashed var(--primary); width: 100%; }
         .btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-weight: 800; font-size: 16px; cursor: pointer; color: white; }
         .btn-save { background: var(--primary); }
         .summary-box { background: linear-gradient(135deg, var(--primary), #8E78FF); color: white; padding: 18px; border-radius: 20px; text-align: center; margin-bottom: 15px; width: 100%; }
+        .job-breakdown { background: rgba(255,255,255,0.2); border-radius: 10px; padding: 10px; margin-top: 10px; font-size: 13px; text-align: right; }
         .history-item { background: white; padding: 12px; border-radius: 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; width: 100%; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         #syncStatus { font-size: 10px; color: #888; margin-bottom: 5px; text-align: center; width: 100%; }
         #loginScreen, #appScreen, #adminScreen { display: none; width: 100%; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; width: 100%; }
-        .job-summary-list { margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee; display: flex; flex-wrap: wrap; gap: 4px; }
-        .job-tag { font-size: 11px; background: #eee; color: #333; padding: 2px 8px; border-radius: 6px; }
+        .admin-nav { background: #2D3436; color: #00B894; padding: 10px; border-radius: 12px; width: 100%; text-align: center; margin-bottom: 10px; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -46,6 +43,7 @@
     </div>
 
     <div id="appScreen">
+        <div id="backToAdmin" class="admin-nav" style="display:none;" onclick="showAdminReport()">חזרה לניהול מנהל 📊</div>
         <div class="header">
             <span id="userBadge" style="background:var(--primary); color:white; padding:6px 14px; border-radius:12px; font-weight:bold;"></span>
             <button onclick="logout()" style="background:none; border:none; color:var(--danger); font-weight:bold;">יציאה ✖</button>
@@ -58,12 +56,11 @@
                 <div><label>כניסה</label><input type="time" id="startTime"></div>
                 <div><label>יציאה</label><input type="time" id="endTime"></div>
             </div>
-            <div class="break-container">
+            <div style="display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:12px; background:#f9f9f9; padding:10px; border-radius:10px;">
                 <input type="checkbox" id="takeBreak" style="width:20px; height:20px;">
-                <label for="takeBreak" style="font-weight:bold;">קיזוז 30 דקות הפסקה</label>
+                <label for="takeBreak" style="font-weight:bold;">קיזוז 30 דק' הפסקה</label>
             </div>
             <button id="mainBtn" class="btn btn-save" onclick="saveShift()">שמור משמרת</button>
-            <button id="cancelEditBtn" class="btn" style="display:none; background:#888; margin-top:5px;" onclick="cancelEdit()">ביטול עריכה</button>
             <div id="adminLinkArea"></div>
         </div>
         <div id="historyList"></div>
@@ -71,49 +68,33 @@
 
     <div id="adminScreen">
         <div class="card" style="background:#2d3436; color:white; text-align:center;">
-            <small>סה"כ שכר ברוטו (כולם)</small>
+            <small>סה"כ ברוטו (כולם)</small>
             <h2 id="totalAllSalary" style="color:var(--secondary); margin:5px 0;">₪0</h2>
             <small id="totalAllHours">0 שעות</small>
         </div>
         <div id="adminDataList"></div>
-        <button class="btn" style="background:#2D3436; margin-top:10px;" onclick="showApp()">חזרה</button>
+        <button class="btn" style="background:#2D3436; margin-top:10px;" onclick="showApp(adminUser)">חזרה לתפריט שלי</button>
     </div>
 </div>
 
 <script>
-    const CONFIG = { 
-        apiKey: "$2a$10$BIXzeiUj1VK8RV.YMZ4hNe7.GMH3.XNP2lSRhX/JrzfX2NidTZpNG", 
-        binId: "67d6000410716a4d5de597ef" 
-    };
+    const CONFIG = { apiKey: "$2a$10$BIXzeiUj1VK8RV.YMZ4hNe7.GMH3.XNP2lSRhX/JrzfX2NidTZpNG", binId: "67d6000410716a4d5de597ef" };
     let db = {};
     let currentUser = null;
-    let editId = null;
+    let adminUser = "אבי לביא"; // שם המנהל הקבוע
 
     async function pullData() {
         try {
-            const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.binId}/latest?nocache=${Date.now()}`, {
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.binId}/latest?t=${Date.now()}`, {
                 headers: { 'X-Master-Key': CONFIG.apiKey, 'X-Bin-Meta': 'false' }
             });
-            if (res.ok) {
-                db = await res.json();
-                localStorage.setItem('wt_db', JSON.stringify(db));
-                document.getElementById('syncStatus').innerText = "✅ מחובר ומסונכרן";
-                return true;
-            }
-        } catch (e) { document.getElementById('syncStatus').innerText = "⚠️ אופליין"; }
+            if (res.ok) { db = await res.json(); localStorage.setItem('wt_db', JSON.stringify(db)); return true; }
+        } catch (e) { }
         return false;
     }
 
     async function syncDB() {
-        document.getElementById('syncStatus').innerText = "🔄 מעדכן ענן...";
-        try {
-            await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.binId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json', 'X-Master-Key': CONFIG.apiKey },
-                body: JSON.stringify(db)
-            });
-            document.getElementById('syncStatus').innerText = "✅ נשמר בהצלחה";
-        } catch(e) { document.getElementById('syncStatus').innerText = "❌ שגיאת שמירה"; }
+        try { await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.binId}`, { method: 'PUT', headers: { 'Content-Type': 'application/json', 'X-Master-Key': CONFIG.apiKey }, body: JSON.stringify(db) }); } catch(e) {}
     }
 
     async function init() {
@@ -130,86 +111,69 @@
 
     function login() {
         const n = document.getElementById('userSelect').value, p = document.getElementById('pass').value;
-        if (db[n] && db[n].password === p) { currentUser = n; showApp(); } else alert("סיסמה שגויה");
+        if (db[n] && db[n].password === p) { currentUser = n; showApp(n); } else alert("סיסמה שגויה");
     }
 
-    async function showApp() {
-        await pullData();
+    async function showApp(userName) {
+        currentUser = userName;
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('adminScreen').style.display = 'none';
         document.getElementById('appScreen').style.display = 'block';
         document.getElementById('userBadge').innerText = currentUser;
-        document.getElementById('workDate').value = new Date().toISOString().split('T')[0];
+        
+        // הצגת כפתור חזרה למנהל רק אם המשתמש הלוגיני הוא אבי לביא והוא צופה במישהו אחר
+        document.getElementById('backToAdmin').style.display = (currentUser !== adminUser) ? "block" : "none";
+        
         const area = document.getElementById('adminLinkArea');
-        area.innerHTML = (currentUser === "אבי לביא") ? `<button class="btn" style="background:#2D3436; margin-top:10px;" onclick="showAdminReport()">לוח מנהל 📊</button>` : "";
+        area.innerHTML = (currentUser === adminUser) ? `<button class="btn" style="background:#2D3436; margin-top:10px;" onclick="showAdminReport()">לוח מנהל 📊</button>` : "";
+        
         renderHistory();
     }
 
     function saveShift() {
         const job = document.getElementById('jobName').value || "כללי", date = document.getElementById('workDate').value, start = document.getElementById('startTime').value, end = document.getElementById('endTime').value;
         if (!date || !start || !end) return alert("מלא פרטים");
-        
         let sT = new Date(`${date}T${start}`), eT = new Date(`${date}T${end}`);
         if (eT <= sT) eT.setDate(eT.getDate() + 1);
-        
         let diff = (eT - sT) / 3600000;
         const hasBreak = document.getElementById('takeBreak').checked;
         if (hasBreak) diff = Math.max(0, diff - 0.5);
 
-        const shiftData = { id: editId || Date.now(), job, date, start, end, hours: diff.toFixed(2), total: (diff * 52.29).toFixed(2), hasBreak };
-
         if (!db[currentUser].shifts) db[currentUser].shifts = [];
-        
-        if (editId) {
-            const idx = db[currentUser].shifts.findIndex(s => s.id === editId);
-            db[currentUser].shifts[idx] = shiftData;
-            cancelEdit();
-        } else {
-            db[currentUser].shifts.push(shiftData);
-        }
+        db[currentUser].shifts.push({ id: Date.now(), job, date, start, end, hours: diff.toFixed(2), total: (diff * 52.29).toFixed(2), hasBreak });
         
         document.getElementById('takeBreak').checked = false;
         renderHistory(); syncDB();
-    }
-
-    function editShift(id) {
-        const s = db[currentUser].shifts.find(x => x.id === id);
-        editId = id;
-        document.getElementById('jobName').value = s.job;
-        document.getElementById('workDate').value = s.date;
-        document.getElementById('startTime').value = s.start;
-        document.getElementById('endTime').value = s.end;
-        document.getElementById('takeBreak').checked = s.hasBreak;
-        document.getElementById('mainBtn').innerText = "עדכן משמרת ✏️";
-        document.getElementById('mainBtn').style.background = "var(--secondary)";
-        document.getElementById('cancelEditBtn').style.display = "block";
-        document.getElementById('inputCard').classList.add('edit-active');
-        window.scrollTo(0,0);
-    }
-
-    function cancelEdit() {
-        editId = null;
-        document.getElementById('mainBtn').innerText = "שמור משמרת";
-        document.getElementById('mainBtn').style.background = "var(--primary)";
-        document.getElementById('cancelEditBtn').style.display = "none";
-        document.getElementById('inputCard').classList.remove('edit-active');
-        document.getElementById('jobName').value = "";
     }
 
     function renderHistory() {
         const sh = db[currentUser].shifts || [];
         const now = new Date(), m = now.getMonth(), y = now.getFullYear();
         let mH = 0, mT = 0;
+        let jobMap = {}; // לחישוב נפרד לכל מקום
+
         sh.forEach(s => {
             const d = new Date(s.date);
-            if(d.getMonth() === m && d.getFullYear() === y) { mH += parseFloat(s.hours); mT += parseFloat(s.total); }
+            if(d.getMonth() === m && d.getFullYear() === y) { 
+                mH += parseFloat(s.hours); 
+                mT += parseFloat(s.total); 
+                jobMap[s.job] = (jobMap[s.job] || 0) + parseFloat(s.hours);
+            }
         });
-        document.getElementById('monthlySummary').innerHTML = `<small>סיכום חודשי</small><br><b style="font-size:20px;">₪${mT.toFixed(0)}</b><br><small>${mH.toFixed(2)} שעות</small>`;
+
+        let jobHtml = Object.keys(jobMap).map(j => `<div>${j}: ${jobMap[j].toFixed(2)} ש'</div>`).join('');
+        
+        document.getElementById('monthlySummary').innerHTML = `
+            <small>סיכום חודשי - ${currentUser}</small><br>
+            <b style="font-size:22px;">₪${mT.toFixed(0)}</b><br>
+            <small>${mH.toFixed(2)} שעות סה"כ</small>
+            <div class="job-breakdown"><b>לפי מקום עבודה:</b>${jobHtml || ' אין נתונים'}</div>
+        `;
+
         document.getElementById('historyList').innerHTML = sh.map(s => `
             <div class="history-item">
                 <div><b>${s.job}</b><br><small>${s.date} ${s.hasBreak ? '(פ)' : ''}</small></div>
                 <div style="text-align:left;"><b>₪${s.total}</b><br><small>${s.hours} ש'</small>
-                <button style="border:none; background:none; color:blue;" onclick="editShift(${s.id})">✏️</button>
                 <button style="border:none; background:none; color:red;" onclick="deleteShift(${s.id})">🗑️</button></div>
             </div>`).reverse().join('');
     }
@@ -225,27 +189,20 @@
             const sh = db[u].shifts || [];
             const sMoney = sh.reduce((a,b) => a + parseFloat(b.total || 0), 0);
             const sHours = sh.reduce((a,b) => a + parseFloat(b.hours || 0), 0);
-            
-            // חישוב סיכום לפי מקום עבודה לעובד
-            const jobMap = {};
-            sh.forEach(s => jobMap[s.job] = (jobMap[s.job] || 0) + parseFloat(s.hours));
-            const jobTags = Object.keys(jobMap).map(j => `<span class="job-tag">${j}: ${jobMap[j].toFixed(1)} ש'</span>`).join('');
-
             total += sMoney; totalH += sHours;
-            return `<div class="card">
-                <div style="display:flex; justify-content:space-between; font-weight:bold;"><span>${u}</span><span>₪${sMoney.toFixed(0)}</span></div>
-                <div class="job-summary-list">${jobTags}</div>
-                <button class="btn" style="background:var(--primary); padding:8px; font-size:12px; margin-top:10px;" onclick="viewUser('${u}')">צפה/ערוך</button>
+            
+            return `<div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                <div><b>${u}</b><br><small>₪${sMoney.toFixed(0)} | ${sHours.toFixed(1)} ש'</small></div>
+                <button class="btn" style="background:var(--primary); width:auto; padding:8px 15px; font-size:12px;" onclick="showApp('${u}')">צפה/ערוך</button>
             </div>`;
         }).join('');
         document.getElementById('totalAllSalary').innerText = `₪${total.toLocaleString()}`;
-        document.getElementById('totalAllHours').innerText = `${totalH.toFixed(1)} שעות מצטברות`;
+        document.getElementById('totalAllHours').innerText = `${totalH.toFixed(1)} שעות`;
     }
 
-    function viewUser(name) { currentUser = name; showApp(); }
     function deleteShift(id) { if(confirm("למחוק?")) { db[currentUser].shifts = db[currentUser].shifts.filter(x => x.id !== id); renderHistory(); syncDB(); } }
     async function addUser() { const n = document.getElementById('newName').value.trim(), p = document.getElementById('newPass').value; if(n && p) { db[n] = { password: p, shifts: [] }; await syncDB(); renderUserSelect(); alert("נוסף!"); } }
-    function logout() { currentUser = null; document.getElementById('loginScreen').style.display='block'; document.getElementById('appScreen').style.display='none'; }
+    function logout() { location.reload(); }
     init();
 </script>
 </body>
