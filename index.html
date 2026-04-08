@@ -3,41 +3,95 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>WorkTime Pro Admin Final</title>
+    <title>WorkTime Pro Fixed UI</title>
     <style>
         :root { --primary: #6C5CE7; --bg: #F0F3F7; --card: #FFFFFF; --danger: #FF7675; --secondary: #00B894; --text: #2D3436; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; min-height: 100vh; }
-        .container { max-width: 600px; margin: auto; }
-        .card { background: var(--card); border-radius: 20px; padding: 18px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); margin-bottom: 15px; border: 1px solid rgba(0,0,0,0.03); }
-        label { display: block; margin-bottom: 8px; font-weight: 700; color: var(--primary); font-size: 14px; text-align: center; }
-        input, select { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #DDD; margin-bottom: 12px; box-sizing: border-box; text-align: center; font-size: 16px; background: #FFF; }
-        .btn { width: 100%; padding: 16px; border-radius: 12px; border: none; font-weight: 800; font-size: 16px; cursor: pointer; color: white; margin-bottom: 10px; }
+        
+        /* תיקון המרכזיות של כל הדף */
+        body { 
+            font-family: -apple-system, system-ui, sans-serif; 
+            background: var(--bg); 
+            color: var(--text); 
+            margin: 0; 
+            padding: 0; 
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .container { 
+            width: 100%;
+            max-width: 500px; 
+            padding: 20px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card { 
+            background: var(--card); 
+            border-radius: 20px; 
+            padding: 20px; 
+            box-shadow: 0 8px 15px rgba(0,0,0,0.05); 
+            margin-bottom: 15px; 
+            text-align: center; /* מוודא שכל התוכן בתוך הכרטיס ממורכז */
+        }
+
+        input, select { 
+            width: 100%; 
+            padding: 14px; 
+            border-radius: 12px; 
+            border: 1px solid #DDD; 
+            margin-bottom: 12px; 
+            box-sizing: border-box; 
+            text-align: center; 
+            font-size: 16px; 
+        }
+
+        .btn { 
+            width: 100%; 
+            padding: 16px; 
+            border-radius: 12px; 
+            border: none; 
+            font-weight: 800; 
+            font-size: 16px; 
+            cursor: pointer; 
+            color: white; 
+            margin-bottom: 10px; 
+        }
+
         .btn-save { background: var(--primary); }
-        .btn-admin { background: #2D3436; margin-top: 10px; }
+        .btn-admin { background: #2D3436; margin-top: 15px; border: 2px solid var(--secondary); }
         
-        /* עיצוב דוח מנהל */
-        .admin-summary-all { background: #2d3436; color: white; padding: 20px; border-radius: 20px; text-align: center; margin-bottom: 20px; border-bottom: 5px solid var(--secondary); }
-        .admin-user-card { border-right: 6px solid var(--primary); padding: 15px; margin-bottom: 15px; background: white; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
-        .admin-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f0f0f0; padding-bottom: 8px; margin-bottom: 10px; }
-        .admin-stats { display: flex; gap: 10px; }
-        .stat-item { flex: 1; background: #f8f9fd; padding: 10px; border-radius: 12px; text-align: center; }
-        .stat-val { font-size: 17px; font-weight: 800; }
+        /* דוח מנהל */
+        .admin-summary-all { background: #2d3436; color: white; padding: 20px; border-radius: 20px; text-align: center; margin-bottom: 20px; }
+        .admin-user-card { border-right: 6px solid var(--primary); padding: 15px; margin-bottom: 15px; background: white; border-radius: 15px; text-align: right; }
         
-        .history-item { background: var(--card); padding: 14px; border-radius: 15px; margin-bottom: 10px; border-right: 4px solid var(--primary); display: flex; justify-content: space-between; align-items: center; }
-        .summary-box { background: var(--primary); color: white; padding: 12px; border-radius: 15px; text-align: center; margin-bottom: 15px; font-weight: bold; }
-        #syncStatus { font-size: 11px; text-align: center; color: #888; margin-bottom: 10px; padding: 10px; border-radius: 10px; background: #fff; border: 1px solid #eee; }
-        #loginScreen, #appScreen, #adminScreen { display: none; }
+        #syncStatus { 
+            font-size: 11px; 
+            text-align: center; 
+            color: #888; 
+            margin-bottom: 10px; 
+            padding: 8px; 
+            background: #fff; 
+            border-radius: 10px; 
+            width: 100%;
+        }
+
+        #loginScreen, #appScreen, #adminScreen { display: none; width: 100%; }
+        
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="syncStatus">⏳ בודק חיבור...</div>
+    <div id="syncStatus">🔄 מתחבר למערכת...</div>
 
     <div id="loginScreen">
         <h1 style="text-align:center; color:var(--primary);">WorkTime Pro</h1>
         <div class="card">
-            <label>בחר משתמש</label>
+            <label style="font-weight:bold; display:block; margin-bottom:10px;">בחר עובד</label>
             <select id="userSelect"></select>
             <input type="password" id="pass" placeholder="סיסמה">
             <button class="btn btn-save" onclick="login()">כניסה</button>
@@ -49,13 +103,14 @@
     </div>
 
     <div id="appScreen">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <span id="userBadge" style="background:var(--primary); color:white; padding:6px 15px; border-radius:12px; font-size:13px; font-weight:bold;"></span>
+        <div class="header-row">
+            <span id="userBadge" style="background:var(--primary); color:white; padding:6px 15px; border-radius:12px; font-weight:bold;"></span>
             <button onclick="logout()" style="background:none; border:none; color:var(--danger); font-weight:bold; cursor:pointer;">יציאה ✖</button>
         </div>
+
         <div class="card">
-            <label>מקום עבודה</label>
-            <input type="text" id="jobName" placeholder="איפה עבדת?">
+            <label>איפה עבדת?</label>
+            <input type="text" id="jobName" placeholder="שם מקום העבודה">
             <label>תאריך</label>
             <input type="date" id="workDate">
             <div style="display:flex; gap:10px;">
@@ -63,6 +118,7 @@
                 <div style="flex:1;"><label>יציאה</label><input type="time" id="endTime"></div>
             </div>
             <button class="btn btn-save" onclick="saveShift()">שמור משמרת</button>
+            
             <div id="adminLinkArea"></div>
         </div>
         <div id="historyList"></div>
@@ -70,37 +126,34 @@
 
     <div id="adminScreen">
         <div class="admin-summary-all">
-            <small>סה"כ משכורות (כל העובדים)</small>
-            <h2 id="totalAllSalary">₪0</h2>
+            <small>סה"כ לתשלום (כל העובדים)</small>
+            <h2 id="totalAllSalary" style="color:var(--secondary); margin:5px 0;">₪0</h2>
         </div>
         <div id="adminDataList"></div>
-        <button class="btn" style="background:#2D3436; margin-top:20px;" onclick="showApp()">חזרה</button>
+        <button class="btn" style="background:#2D3436; margin-top:20px;" onclick="showApp()">חזרה לתפריט</button>
     </div>
 </div>
 
 <script>
     const CONFIG = { apiKey: "$2a$10$BIXzeiUj1VK8RV.YMZ4hNe7.GMH3.XNP2lSRhX/JrzfX2NidTZpNG", binId: "69d6000410716a4d5de597ef" };
+    // טעינה ראשונית מהזיכרון כדי שלא יהיה מסך לבן
     let db = JSON.parse(localStorage.getItem('wt_db') || '{"אבי לביא":{"password":"123","shifts":[]}}');
     let currentUser = null;
 
     async function init() {
-        const status = document.getElementById('syncStatus');
-        renderUserSelect(); // טעינה ראשונית ממה שיש בזיכרון
-        
+        renderUserSelect();
         try {
-            const response = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.binId}/latest`, {
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.binId}/latest?t=${Date.now()}`, {
                 headers: { 'X-Master-Key': CONFIG.apiKey, 'X-Bin-Meta': 'false' }
             });
-            if (response.ok) {
-                db = await response.json();
+            if (res.ok) {
+                db = await res.json();
                 localStorage.setItem('wt_db', JSON.stringify(db));
-                status.innerHTML = "✅ הנתונים מסונכרנים לענן";
+                document.getElementById('syncStatus').innerText = "✅ מחובר לענן";
                 renderUserSelect();
-            } else {
-                status.innerHTML = "⚠️ עובד במצב לא מקוון";
             }
         } catch (e) {
-            status.innerHTML = "⚠️ אין אינטרנט - נתונים נשמרים מקומית";
+            document.getElementById('syncStatus').innerText = "⚠️ עובד במצב לא מקוון";
         }
     }
 
@@ -123,12 +176,12 @@
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('adminScreen').style.display = 'none';
         document.getElementById('appScreen').style.display = 'block';
-        document.getElementById('userBadge').innerText = "שלום, " + currentUser;
+        document.getElementById('userBadge').innerText = currentUser;
         document.getElementById('workDate').value = new Date().toISOString().split('T')[0];
         
         const area = document.getElementById('adminLinkArea');
         if (currentUser === "אבי לביא") {
-            area.innerHTML = `<button class="btn btn-admin" onclick="showAdminReport()">ניהול עובדים (אבי לביא) 📊</button>`;
+            area.innerHTML = `<button class="btn btn-admin" onclick="showAdminReport()">ניהול עובדים 📊</button>`;
         } else { area.innerHTML = ""; }
         renderHistory();
     }
@@ -137,23 +190,20 @@
         document.getElementById('appScreen').style.display = 'none';
         document.getElementById('adminScreen').style.display = 'block';
         const list = document.getElementById('adminDataList');
-        let totalAll = 0;
+        let total = 0;
         
         list.innerHTML = Object.keys(db).map(u => {
             const sh = db[u].shifts || [];
-            const h = sh.reduce((a,b) => a+parseFloat(b.hours || 0), 0);
-            const t = sh.reduce((a,b) => a+parseFloat(b.total || 0), 0);
-            totalAll += t;
+            const h = sh.reduce((a,b) => a + parseFloat(b.hours || 0), 0);
+            const s = sh.reduce((a,b) => a + parseFloat(b.total || 0), 0);
+            total += s;
             return `<div class="admin-user-card card">
-                <div class="admin-header"><b>${u}</b> <span style="font-size:12px; color:#888;">🔑 ${db[u].password}</span></div>
-                <div class="admin-stats">
-                    <div class="stat-item"><small>שעות</small><div class="stat-val">${h.toFixed(2)}</div></div>
-                    <div class="stat-item"><small>שכר</small><div class="stat-val" style="color:var(--secondary)">₪${t.toFixed(0)}</div></div>
-                </div>
-                <button class="btn" style="background:var(--primary); padding:8px; font-size:12px; margin-top:10px;" onclick="viewUser('${u}')">ערוך משמרות</button>
+                <b>${u}</b> (סיסמה: ${db[u].password})<br>
+                <span>${h.toFixed(2)} שעות | ₪${s.toFixed(0)}</span><br>
+                <button class="btn" style="background:var(--primary); padding:5px; margin-top:10px; font-size:12px;" onclick="viewUser('${u}')">צפה/ערוך</button>
             </div>`;
         }).join('');
-        document.getElementById('totalAllSalary').innerText = `₪${totalAll.toLocaleString()}`;
+        document.getElementById('totalAllSalary').innerText = `₪${total.toLocaleString()}`;
     }
 
     function viewUser(name) { currentUser = name; showApp(); }
@@ -182,9 +232,11 @@
 
     function renderHistory() {
         const sh = db[currentUser].shifts || [];
-        const totals = sh.reduce((a,b) => a + parseFloat(b.hours), 0);
-        document.getElementById('historyList').innerHTML = `<div class="summary-box">סה"כ שעות למשתמש זה: ${totals.toFixed(2)}</div>` + 
-            sh.map(s => `<div class="history-item"><div><b>${s.job}</b><br><small>${s.date}</small></div><div><b>₪${s.total}</b> <button style="border:none; background:none;" onclick="deleteShift(${s.id})">🗑️</button></div></div>`).reverse().join('');
+        document.getElementById('historyList').innerHTML = sh.map(s => `
+            <div class="history-item card" style="display:flex; justify-content:space-between; text-align:right;">
+                <div><b>${s.job}</b><br><small>${s.date}</small></div>
+                <div><b>₪${s.total}</b> <button style="border:none; background:none;" onclick="deleteShift(${s.id})">🗑️</button></div>
+            </div>`).reverse().join('');
     }
 
     function deleteShift(id) {
@@ -193,7 +245,7 @@
 
     async function addUser() {
         const n = document.getElementById('newName').value.trim(), p = document.getElementById('newPass').value;
-        if(n && p) { db[n] = { password: p, shifts: [] }; await syncDB(); renderUserSelect(); alert("נוצר!"); }
+        if(n && p) { db[n] = { password: p, shifts: [] }; await syncDB(); renderUserSelect(); alert("עובד נוסף!"); }
     }
 
     function logout() { currentUser = null; document.getElementById('loginScreen').style.display='block'; document.getElementById('appScreen').style.display='none'; }
