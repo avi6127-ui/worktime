@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>WorkTime Pro - Final Admin & Break Fix</title>
+    <title>WorkTime Pro - Edit Support</title>
     <style>
-        :root { --primary: #6C5CE7; --bg: #F0F3F7; --card: #FFFFFF; --danger: #FF7675; --secondary: #00B894; --text: #2D3436; }
+        :root { --primary: #6C5CE7; --bg: #F0F3F7; --card: #FFFFFF; --danger: #FF7675; --secondary: #00B894; --text: #2D3436; --warning: #fdcb6e; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
         body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); display: flex; justify-content: center; min-height: 100vh; color: var(--text); }
         .container { width: 100%; max-width: 450px; padding: 15px; }
@@ -16,6 +16,7 @@
         .time-row label { display: block; font-size: 11px; color: var(--primary); font-weight: bold; margin-bottom: 3px; text-align: center; }
         .btn { width: 100%; padding: 14px; border-radius: 10px; border: none; font-weight: 800; font-size: 16px; cursor: pointer; color: white; transition: 0.2s; }
         .btn-save { background: var(--primary); }
+        .btn-update { background: var(--warning); color: #2d3436; }
         .admin-nav { background: #2D3436; color: var(--secondary); padding: 10px; border-radius: 10px; text-align: center; margin-bottom: 12px; font-weight: bold; cursor: pointer; }
         .summary-box { background: linear-gradient(135deg, var(--primary), #8E78FF); color: white; padding: 15px; border-radius: 18px; margin-bottom: 12px; }
         .job-table { width: 100%; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 8px; font-size: 13px; }
@@ -25,8 +26,7 @@
         #loginScreen, #appScreen, #adminScreen { display: none; width: 100%; }
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
         .badge { background: var(--primary); color: white; padding: 4px 12px; border-radius: 20px; font-size: 14px; font-weight: bold; }
-        .admin-actions { display: flex; gap: 5px; margin-top: 8px; }
-        .btn-mini { padding: 6px 10px; font-size: 11px; width: auto; flex: 1; border-radius: 6px; }
+        .history-actions { display: flex; gap: 10px; align-items: center; }
     </style>
 </head>
 <body>
@@ -54,7 +54,7 @@
             <button onclick="logout()" style="background:none; border:none; color:var(--danger); font-weight:bold;">החלף משתמש</button>
         </div>
         <div id="monthlySummary" class="summary-box"></div>
-        <div class="card">
+        <div class="card" id="editorCard">
             <input type="text" id="jobName" placeholder="מקום עבודה">
             <div class="time-row">
                 <div style="flex: 1.5;"><label>תאריך</label><input type="date" id="workDate"></div>
@@ -65,7 +65,8 @@
                 <input type="checkbox" id="takeBreak" style="width:18px; height:18px;">
                 <label for="takeBreak" style="font-size:14px; font-weight:bold;">קיזוז 30 דקות הפסקה</label>
             </div>
-            <button class="btn btn-save" onclick="saveShift()">שמור משמרת</button>
+            <button id="submitBtn" class="btn btn-save" onclick="saveShift()">שמור משמרת</button>
+            <button id="cancelEditBtn" class="btn" style="display:none; background:#888; margin-top:5px; padding:8px;" onclick="cancelEdit()">ביטול עריכה</button>
             <div id="adminLinkArea"></div>
         </div>
         <div id="historyList"></div>
@@ -87,6 +88,7 @@
     let db = {};
     let currentUser = null;
     let adminUser = "אבי לביא";
+    let editShiftId = null;
 
     async function pullData() {
         try {
@@ -99,14 +101,14 @@
     }
 
     async function syncDB() {
-        document.getElementById('syncStatus').innerText = "🔄 מסנכרן לענן...";
+        document.getElementById('syncStatus').innerText = "🔄 מעדכן ענן...";
         try {
             await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.binId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json', 'X-Master-Key': CONFIG.apiKey },
                 body: JSON.stringify(db)
             });
-            document.getElementById('syncStatus').innerText = "✅ סונכרן";
+            document.getElementById('syncStatus').innerText = "✅ נשמר";
         } catch(e) { document.getElementById('syncStatus').innerText = "❌ שגיאה"; }
     }
 
@@ -147,18 +149,49 @@
         
         let sT = new Date(`${date}T${start}`), eT = new Date(`${date}T${end}`);
         if (eT <= sT) eT.setDate(eT.getDate() + 1);
-        
         let diff = (eT - sT) / 3600000;
-        if (document.getElementById('takeBreak').checked) {
-            diff = Math.max(0, diff - 0.5); // קיזוז חצי שעה
-        }
+        if (document.getElementById('takeBreak').checked) diff = Math.max(0, diff - 0.5);
 
-        await pullData(); // סנכרון לפני כתיבה
+        await pullData();
         if (!db[currentUser].shifts) db[currentUser].shifts = [];
-        db[currentUser].shifts.push({ id: Date.now(), job, date, start, end, hours: diff.toFixed(2), total: (diff * 52.29).toFixed(2), hasBreak: document.getElementById('takeBreak').checked });
         
-        document.getElementById('takeBreak').checked = false;
+        const newShift = { id: editShiftId || Date.now(), job, date, start, end, hours: diff.toFixed(2), total: (diff * 52.29).toFixed(2), hasBreak: document.getElementById('takeBreak').checked };
+
+        if (editShiftId) {
+            const idx = db[currentUser].shifts.findIndex(s => s.id === editShiftId);
+            db[currentUser].shifts[idx] = newShift;
+            cancelEdit();
+        } else {
+            db[currentUser].shifts.push(newShift);
+        }
+        
         renderHistory(); await syncDB();
+    }
+
+    function startEdit(id) {
+        const s = db[currentUser].shifts.find(x => x.id === id);
+        editShiftId = id;
+        document.getElementById('jobName').value = s.job;
+        document.getElementById('workDate').value = s.date;
+        document.getElementById('startTime').value = s.start;
+        document.getElementById('endTime').value = s.end;
+        document.getElementById('takeBreak').checked = s.hasBreak;
+        
+        const btn = document.getElementById('submitBtn');
+        btn.innerText = "עדכן משמרת ✏️";
+        btn.className = "btn btn-update";
+        document.getElementById('cancelEditBtn').style.display = "block";
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    }
+
+    function cancelEdit() {
+        editShiftId = null;
+        document.getElementById('jobName').value = "";
+        const btn = document.getElementById('submitBtn');
+        btn.innerText = "שמור משמרת";
+        btn.className = "btn btn-save";
+        document.getElementById('cancelEditBtn').style.display = "none";
+        document.getElementById('takeBreak').checked = false;
     }
 
     function renderHistory() {
@@ -177,7 +210,15 @@
 
         const jobRows = Object.keys(jobMap).map(j => `<div class="job-row"><span>${j}</span><span>${jobMap[j].h.toFixed(1)} ש' | <b>₪${jobMap[j].m.toFixed(0)}</b></span></div>`).join('');
         document.getElementById('monthlySummary').innerHTML = `<div style="text-align:center;"><small>סיכום חודשי</small><br><b style="font-size:24px;">₪${mT.toFixed(0)}</b><br><small>${mH.toFixed(2)} שעות סה"כ</small></div><div class="job-table">${jobRows || 'אין נתונים'}</div>`;
-        document.getElementById('historyList').innerHTML = sh.map(s => `<div class="history-item"><div><b>${s.job}</b><br><small>${s.date} ${s.hasBreak ? '(פ)' : ''}</small></div><div style="text-align:left;"><b>₪${s.total}</b><br><small>${s.hours} ש'</small><button style="border:none; background:none; color:red; margin-right:8px;" onclick="deleteShift(${s.id})">🗑️</button></div></div>`).reverse().join('');
+        document.getElementById('historyList').innerHTML = sh.map(s => `
+            <div class="history-item">
+                <div><b>${s.job}</b><br><small>${s.date} ${s.hasBreak ? '(פ)' : ''}</small></div>
+                <div class="history-actions">
+                    <div style="text-align:left;"><b>₪${s.total}</b><br><small>${s.hours} ש'</small></div>
+                    <button style="border:none; background:none; color:blue; font-size:18px;" onclick="startEdit(${s.id})">✏️</button>
+                    <button style="border:none; background:none; color:red; font-size:18px;" onclick="deleteShift(${s.id})">🗑️</button>
+                </div>
+            </div>`).reverse().join('');
     }
 
     async function showAdminReport() {
@@ -190,46 +231,17 @@
         list.innerHTML = Object.keys(db).map(u => {
             const sh = db[u].shifts || [], sMoney = sh.reduce((a,b) => a + parseFloat(b.total || 0), 0), sHours = sh.reduce((a,b) => a + parseFloat(b.hours || 0), 0);
             total += sMoney; totalH += sHours;
-            return `<div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div><b>${u}</b><br><small>₪${sMoney.toFixed(0)} | ${sHours.toFixed(1)} ש'</small></div>
-                    <button class="btn" style="background:var(--primary); width:auto; padding:8px 12px; font-size:12px;" onclick="showApp('${u}')">ניהול</button>
-                </div>
-                <div class="admin-actions">
-                    <button class="btn btn-mini" style="background:#888;" onclick="editUser('${u}')">✏️ ערוך שם/סיסמה</button>
-                    <button class="btn btn-mini" style="background:var(--danger);" onclick="deleteUser('${u}')">🗑️ מחק עובד</button>
-                </div>
+            return `<div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+                <div><b>${u}</b><br><small>₪${sMoney.toFixed(0)} | ${sHours.toFixed(1)} ש'</small></div>
+                <button class="btn" style="background:var(--primary); width:auto; padding:8px 12px; font-size:12px;" onclick="showApp('${u}')">ניהול</button>
             </div>`;
         }).join('');
         document.getElementById('totalAllSalary').innerText = `₪${total.toLocaleString()}`;
         document.getElementById('totalAllHours').innerText = `${totalH.toFixed(1)} שעות`;
     }
 
-    async function editUser(oldName) {
-        const newName = prompt("שם חדש:", oldName);
-        const newPass = prompt("סיסמה חדשה:", db[oldName].password);
-        if (newName && newPass) {
-            await pullData();
-            const userData = db[oldName];
-            delete db[oldName];
-            db[newName] = { ...userData, password: newPass };
-            await syncDB(); showAdminReport();
-        }
-    }
-
-    async function deleteUser(name) {
-        if(name === adminUser) return alert("לא ניתן למחוק מנהל");
-        if(confirm(`למחוק את ${name} לצמיתות?`)) {
-            await pullData(); delete db[name];
-            await syncDB(); showAdminReport();
-        }
-    }
-
     async function deleteShift(id) { if(confirm("למחוק משמרת?")) { await pullData(); db[currentUser].shifts = db[currentUser].shifts.filter(x => x.id !== id); renderHistory(); await syncDB(); } }
-    async function addUser() { 
-        const n = document.getElementById('newName').value.trim(), p = document.getElementById('newPass').value; 
-        if(n && p) { await pullData(); db[n] = { password: p, shifts: [] }; await syncDB(); renderUserSelect(); alert("נוסף!"); } 
-    }
+    async function addUser() { const n = document.getElementById('newName').value.trim(), p = document.getElementById('newPass').value; if(n && p) { await pullData(); db[n] = { password: p, shifts: [] }; await syncDB(); renderUserSelect(); alert("נוסף!"); } }
     function logout() { localStorage.setItem('isAdminView','false'); location.reload(); }
     init();
 </script>
