@@ -3,45 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>WorkTime Pro Fast</title>
+    <title>WorkTime Pro Ultra</title>
     <style>
         :root { --primary: #6C5CE7; --bg: #F0F3F7; --card: #FFFFFF; --danger: #FF7675; --secondary: #00B894; --text: #2D3436; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; min-height: 100vh; -webkit-tap-highlight-color: transparent; }
+        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; min-height: 100vh; }
         .container { max-width: 500px; margin: auto; }
         .card { background: var(--card); border-radius: 20px; padding: 18px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        h1, h2 { text-align: center; color: var(--primary); margin: 10px 0; }
         label { display: block; margin-bottom: 5px; font-weight: 700; color: var(--primary); font-size: 14px; text-align: center; }
         input, select { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #DDD; margin-bottom: 12px; box-sizing: border-box; text-align: center; font-size: 16px; background: #FFF; }
-        .btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: 800; font-size: 16px; cursor: pointer; color: white; margin-bottom: 10px; transition: opacity 0.2s; }
-        .btn:active { opacity: 0.7; }
+        .btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: 800; font-size: 16px; cursor: pointer; color: white; margin-bottom: 10px; }
         .btn-save { background: var(--primary); }
         .btn-admin { background: #2D3436; margin-top: 10px; }
         .history-item { background: var(--card); padding: 12px; border-radius: 15px; margin-bottom: 8px; border-right: 4px solid var(--primary); display: flex; justify-content: space-between; align-items: center; }
-        .btn-icon { background: none; border: none; cursor: pointer; font-size: 18px; padding: 5px; }
-        #syncStatus { font-size: 11px; text-align: center; color: #888; margin-bottom: 10px; height: 15px; font-weight: bold; }
+        .btn-icon { background: none; border: none; cursor: pointer; font-size: 18px; }
+        #syncStatus { font-size: 11px; text-align: center; color: #888; margin-bottom: 10px; cursor: pointer; }
         #loginScreen, #appScreen, #adminScreen, #editModal { display: none; }
-        .admin-row { padding: 12px; border-bottom: 1px solid #eee; }
-        .break-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px; font-weight: bold; }
-        .break-row input { width: auto; margin: 0; transform: scale(1.2); }
         .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="syncStatus">מוכן</div>
+    <div id="syncStatus" onclick="location.reload()">בדיקת סנכרון... (לחץ לרענון)</div>
 
     <div id="loginScreen">
-        <h1>WorkTime Pro</h1>
+        <h1 style="text-align:center; color:var(--primary);">WorkTime Pro</h1>
         <div class="card">
             <label>בחר משתמש</label>
             <select id="userSelect"></select>
             <input type="password" id="pass" placeholder="סיסמה">
-            <button class="btn btn-save" onclick="login()">כניסה מהירה</button>
+            <button class="btn btn-save" onclick="login()">כניסה</button>
             <hr style="opacity:0.1; margin:20px 0;">
             <input type="text" id="newName" placeholder="שם עובד חדש">
             <input type="password" id="newPass" placeholder="סיסמה">
-            <button class="btn" style="background:var(--secondary)" onclick="addUser()">פתח חשבון</button>
+            <button class="btn" style="background:var(--secondary)" onclick="addUser()">פתח חשבון חדש</button>
         </div>
     </div>
 
@@ -57,7 +52,9 @@
                 <div style="flex:1;"><label>כניסה</label><input type="time" id="startTime"></div>
                 <div style="flex:1;"><label>יציאה</label><input type="time" id="endTime"></div>
             </div>
-            <div class="break-row"><input type="checkbox" id="takeBreak"> <span>30 דקות הפסקה</span></div>
+            <div style="text-align:center; margin-bottom:15px;">
+                <input type="checkbox" id="takeBreak" style="width:auto;"> <b>30 דקות הפסקה</b>
+            </div>
             <label>שכר שעתי + נק' זיכוי</label>
             <div style="display:flex; gap:5px;">
                 <input type="number" id="hourlyRate" value="50" style="flex:2;">
@@ -70,7 +67,7 @@
     </div>
 
     <div id="adminScreen">
-        <h2>ניהול עובדים</h2>
+        <h2 style="text-align:center;">ניהול עובדים</h2>
         <div id="adminDataList"></div>
         <button class="btn" style="background:#2D3436" onclick="showScreen('appScreen')">חזרה</button>
     </div>
@@ -83,7 +80,6 @@
                 <input type="time" id="editStart">
                 <input type="time" id="editEnd">
             </div>
-            <div class="break-row"><input type="checkbox" id="editBreak"> <span>הפסקה</span></div>
             <button class="btn btn-save" onclick="updateShift()">עדכן</button>
             <button class="btn" style="background:var(--danger)" onclick="closeEdit()">ביטול</button>
         </div>
@@ -96,111 +92,101 @@
     let currentUser = null, editingId = null, editingUser = null;
 
     function showScreen(id) {
-        ['loginScreen','appScreen','adminScreen'].forEach(s => document.getElementById(s).style.display = (s===id)?'block':'none');
+        ['loginScreen','appScreen','adminScreen'].forEach(s => {
+            const el = document.getElementById(s);
+            if(el) el.style.display = (s === id) ? 'block' : 'none';
+        });
     }
 
     async function init() {
-        renderLogin(); // טעינה מיידית מהזיכרון
+        renderLogin();
         try {
-            const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.binId}/latest`, { 
-                headers: { 'X-Master-Key': CONFIG.apiKey },
-                signal: AbortSignal.timeout(5000) // מפסיק לחכות אחרי 5 שניות
-            });
+            const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.binId}/latest`, { headers: { 'X-Master-Key': CONFIG.apiKey }});
             const data = await res.json();
-            db = data.record;
-            localStorage.setItem('wt_db', JSON.stringify(db));
-            document.getElementById('syncStatus').innerText = "✅ מסונכרן";
-            renderLogin();
-        } catch(e) { 
-            document.getElementById('syncStatus').innerText = "⚠️ מצב לא מקוון"; 
-        }
+            if(data.record) {
+                db = data.record;
+                localStorage.setItem('wt_db', JSON.stringify(db));
+                document.getElementById('syncStatus').innerText = "✅ מחובר ומסונכרן";
+                renderLogin();
+            }
+        } catch(e) { document.getElementById('syncStatus').innerText = "⚠️ עובד מקומי"; }
     }
 
     function renderLogin() {
         const sel = document.getElementById('userSelect');
-        sel.innerHTML = Object.keys(db).map(n => `<option value="${n}">${n}</option>`).join('');
+        const names = Object.keys(db);
+        sel.innerHTML = names.map(n => `<option value="${n}">${n}</option>`).join('');
         showScreen('loginScreen');
     }
 
     function login() {
         const n = document.getElementById('userSelect').value;
-        if (db[n] && db[n].password === document.getElementById('pass').value) { 
-            currentUser = n; 
-            showApp(); 
-        } else alert("סיסמה שגויה");
+        const p = document.getElementById('pass').value;
+        if (db[n] && db[n].password === p) { currentUser = n; showApp(); } else alert("סיסמה שגויה");
     }
 
     function showApp() {
         showScreen('appScreen');
         document.getElementById('userBadge').innerText = currentUser;
         document.getElementById('workDate').value = new Date().toISOString().split('T')[0];
-        document.getElementById('adminLinkArea').innerHTML = (currentUser === "אבי לביא") ? `<button class="btn btn-admin" onclick="showAdminReport()">דוח מנהל 📊</button>` : "";
+        const isAdmin = (currentUser.trim() === "אבי לביא");
+        document.getElementById('adminLinkArea').innerHTML = isAdmin ? `<button class="btn btn-admin" onclick="showAdminReport()">דוח מנהל 📊</button>` : "";
         renderHistory();
     }
 
     async function syncDB() {
         localStorage.setItem('wt_db', JSON.stringify(db));
-        fetch(`https://api.jsonbin.io/v3/b/${CONFIG.binId}`, { 
-            method: 'PUT', 
-            headers: { 'Content-Type': 'application/json', 'X-Master-Key': CONFIG.apiKey }, 
-            body: JSON.stringify(db) 
-        });
+        try {
+            await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.binId}`, { 
+                method: 'PUT', 
+                headers: { 'Content-Type': 'application/json', 'X-Master-Key': CONFIG.apiKey }, 
+                body: JSON.stringify(db) 
+            });
+        } catch(e) { console.log("Offline save"); }
     }
 
     async function saveShift() {
         const date = document.getElementById('workDate').value, start = document.getElementById('startTime').value, end = document.getElementById('endTime').value;
         if (!date || !start || !end) return alert("מלא פרטים");
-        
         const sT = new Date(`${date}T${start}`), eT = new Date(`${date}T${end}`);
         if (eT <= sT) eT.setDate(eT.getDate() + 1);
-        
         let diff = (eT - sT) / 3600000;
-        const hasBreak = document.getElementById('takeBreak').checked;
-        if (hasBreak) diff = Math.max(0, diff - 0.5);
-
+        if (document.getElementById('takeBreak').checked) diff = Math.max(0, diff - 0.5);
         const rate = parseFloat(document.getElementById('hourlyRate').value);
         const credit = parseFloat(document.getElementById('taxCredits').value);
-        
         if (!db[currentUser].shifts) db[currentUser].shifts = [];
-        db[currentUser].shifts.push({ id: Date.now(), date, start, end, hours: diff.toFixed(2), total: (diff * (rate + credit)).toFixed(2), hasBreak });
-        
+        db[currentUser].shifts.push({ id: Date.now(), date, start, end, hours: diff.toFixed(2), total: (diff * (rate + credit)).toFixed(2) });
         await syncDB(); renderHistory();
-        document.getElementById('takeBreak').checked = false;
     }
 
     function renderHistory() {
         const sh = db[currentUser].shifts || [];
         const h = sh.reduce((a,b) => a+parseFloat(b.hours),0), p = sh.reduce((a,b) => a+parseFloat(b.total),0);
-        document.getElementById('historyList').innerHTML = `<div class="card" style="text-align:center; background:var(--primary); color:white;"><b>סה"כ: ${h.toFixed(2)} שעות | ₪${p.toFixed(2)}</b></div>` + 
-            sh.map(s => `<div class="history-item"><div><b>${s.date.split('-').reverse().join('/')}</b><br><small>${s.start}-${s.end} ${s.hasBreak?'(הפ)':''}</small></div><div style="text-align:left;"><b style="color:var(--secondary)">₪${s.total}</b><br><button class="btn-icon" onclick="openEdit(${s.id},'${currentUser}')">✏️</button><button class="btn-icon" onclick="deleteShift(${s.id},'${currentUser}')">🗑️</button></div></div>`).reverse().join('');
+        document.getElementById('historyList').innerHTML = `<div class="card" style="text-align:center; background:var(--primary); color:white;"><b>סה"כ: ${h.toFixed(2)} ש' | ₪${p.toFixed(2)}</b></div>` + 
+            sh.map(s => `<div class="history-item"><div><b>${s.date}</b><br><small>${s.start}-${s.end}</small></div><div><b>₪${s.total}</b> <button class="btn-icon" onclick="openEdit(${s.id},'${currentUser}')">✏️</button><button class="btn-icon" onclick="deleteShift(${s.id},'${currentUser}')">🗑️</button></div></div>`).reverse().join('');
     }
 
     function showAdminReport() {
         showScreen('adminScreen');
         document.getElementById('adminDataList').innerHTML = Object.keys(db).map(u => {
             const sh = db[u].shifts || [], h = sh.reduce((a,b) => a+parseFloat(b.hours),0), t = sh.reduce((a,b) => a+parseFloat(b.total),0);
-            return `<div class="card admin-row"><b>${u}</b>: ${h.toFixed(2)} ש' | ₪${t.toFixed(2)}<div style="margin-top:10px;">` + 
-            sh.map(s => `<div style="font-size:12px; display:flex; justify-content:space-between; border-top:1px solid #eee; padding:5px 0;"><span>${s.date}</span><span>₪${s.total} <button class="btn-icon" onclick="openEdit(${s.id},'${u}')">✏️</button><button class="btn-icon" onclick="deleteShift(${s.id},'${u}')">🗑️</button></span></div>`).join('') + `</div></div>`;
+            return `<div class="card"><b>${u}</b>: ${h.toFixed(2)} ש' | ₪${t.toFixed(2)}<br><button class="btn-admin" style="padding:5px; font-size:12px;" onclick="currentUser='${u}'; showApp();">צפה בפירוט</button></div>`;
         }).join('');
     }
 
-    function openEdit(id, u) { editingId=id; editingUser=u; const s=db[u].shifts.find(x=>x.id===id); document.getElementById('editDate').value=s.date; document.getElementById('editStart').value=s.start; document.getElementById('editEnd').value=s.end; document.getElementById('editBreak').checked=s.hasBreak; document.getElementById('editModal').style.display='flex'; }
+    function openEdit(id, u) { editingId=id; editingUser=u; const s=db[u].shifts.find(x=>x.id===id); document.getElementById('editDate').value=s.date; document.getElementById('editStart').value=s.start; document.getElementById('editEnd').value=s.end; document.getElementById('editModal').style.display='flex'; }
     function closeEdit() { document.getElementById('editModal').style.display='none'; }
-    
-    async function updateShift() {
+    async function updateShift() { 
         const s = db[editingUser].shifts.find(x => x.id === editingId);
-        s.date = document.getElementById('editDate').value; s.start = document.getElementById('editStart').value; s.end = document.getElementById('editEnd').value; s.hasBreak = document.getElementById('editBreak').checked;
+        s.date = document.getElementById('editDate').value; s.start = document.getElementById('editStart').value; s.end = document.getElementById('editEnd').value;
         const sT = new Date(`${s.date}T${s.start}`), eT = new Date(`${s.date}T${s.end}`);
         if (eT <= sT) eT.setDate(eT.getDate() + 1);
-        s.hours = ((eT - sT) / 3600000 - (s.hasBreak ? 0.5 : 0)).toFixed(2);
-        s.total = (s.hours * 52.29).toFixed(2);
-        await syncDB(); closeEdit(); (currentUser === "אבי לביא") ? showAdminReport() : renderHistory();
+        s.hours = ((eT - sT) / 3600000).toFixed(2); s.total = (s.hours * 52.29).toFixed(2);
+        await syncDB(); closeEdit(); renderHistory();
     }
-
-    async function deleteShift(id, u) { if(confirm("למחוק?")) { db[u].shifts = db[u].shifts.filter(x=>x.id!==id); await syncDB(); (currentUser === "אבי לביא") ? showAdminReport() : renderHistory(); } }
+    async function deleteShift(id, u) { if(confirm("למחוק?")) { db[u].shifts = db[u].shifts.filter(x=>x.id!==id); await syncDB(); renderHistory(); } }
     function addUser() { const n=document.getElementById('newName').value, p=document.getElementById('newPass').value; if(n&&p){ db[n]={password:p,shifts:[]}; syncDB(); renderLogin(); alert("חשבון נוצר!"); } }
-    function logout() { location.reload(); }
-    
+    function logout() { currentUser = null; renderLogin(); }
     init();
 </script>
 </body>
