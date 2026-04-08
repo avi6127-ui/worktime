@@ -1,74 +1,3 @@
-<!DOCTYPE html>
-<html lang="he" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>WorkTime Pro</title>
-    <style>
-        :root { --primary: #6C5CE7; --bg: #F0F3F7; --card: #FFFFFF; --danger: #FF7675; --secondary: #00B894; --text: #2D3436; }
-        body { font-family: -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; min-height: 100vh; }
-        .container { max-width: 500px; margin: auto; }
-        .card { background: var(--card); border-radius: 20px; padding: 18px; box-shadow: 0 8px 15px rgba(0,0,0,0.05); margin-bottom: 15px; }
-        h1, h2 { text-align: center; color: var(--primary); margin: 10px 0; }
-        label { display: block; margin-bottom: 5px; font-weight: 700; color: var(--primary); font-size: 14px; text-align: center; }
-        input, select { width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #DDD; margin-bottom: 12px; box-sizing: border-box; text-align: center; font-size: 16px; background: #FFF; -webkit-appearance: none; }
-        .btn { width: 100%; padding: 15px; border-radius: 12px; border: none; font-weight: 800; font-size: 16px; cursor: pointer; color: white; margin-bottom: 10px; }
-        .btn-save { background: var(--primary); }
-        .btn-admin { background: #2D3436; margin-top: 10px; }
-        .history-item { background: var(--card); padding: 12px; border-radius: 15px; margin-bottom: 8px; border-right: 4px solid var(--primary); display: flex; justify-content: space-between; align-items: center; }
-        #syncStatus { font-size: 11px; text-align: center; color: #888; margin-bottom: 10px; height: 15px; font-weight: bold; }
-        #loginScreen, #appScreen, #adminScreen { display: none; }
-        .admin-row { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #eee; align-items: center; }
-        .badge { background: var(--primary); color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; }
-    </style>
-</head>
-<body>
-
-<div class="container">
-    <div id="syncStatus">מתחבר למערכת...</div>
-
-    <div id="loginScreen">
-        <h1>WorkTime Pro</h1>
-        <div class="card">
-            <label>בחר משתמש</label>
-            <select id="userSelect"></select>
-            <input type="password" id="pass" placeholder="סיסמה">
-            <button class="btn btn-save" onclick="login()">כניסה</button>
-            <hr style="opacity:0.1; margin:20px 0;">
-            <label>רישום עובד חדש</label>
-            <input type="text" id="newName" placeholder="שם מלא">
-            <input type="password" id="newPass" placeholder="סיסמה">
-            <button class="btn" style="background:var(--secondary)" onclick="addUser()">צור חשבון</button>
-        </div>
-    </div>
-
-    <div id="appScreen">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-            <span class="badge" id="userBadge"></span>
-            <button onclick="logout()" style="background:none; border:none; color:var(--danger); font-weight:bold; cursor:pointer;">יציאה ✖</button>
-        </div>
-        <div class="card">
-            <label>תאריך</label>
-            <input type="date" id="workDate">
-            <div style="display:flex; gap:10px;">
-                <div style="flex:1;"><label>כניסה</label><input type="time" id="startTime"></div>
-                <div style="flex:1;"><label>יציאה</label><input type="time" id="endTime"></div>
-            </div>
-            <label>שכר שעתי (₪)</label>
-            <input type="number" id="hourlyRate" value="50">
-            <button class="btn btn-save" onclick="saveShift()">שמור משמרת</button>
-            <div id="adminLinkArea"></div>
-        </div>
-        <div id="historyList"></div>
-    </div>
-
-    <div id="adminScreen">
-        <h2>דוח מנהל</h2>
-        <div class="card" id="adminDataList"></div>
-        <button class="btn" style="background:#2D3436" onclick="showScreen('appScreen')">חזרה</button>
-    </div>
-</div>
-
 <script>
     const CONFIG = {
         apiKey: "$2a$10$BIXzeiUj1VK8RV.YMZ4hNe7.GMH3.XNP2lSRhX/JrzfX2NidTZpNG",
@@ -81,7 +10,6 @@
 
     function updateSyncStatus(msg) { document.getElementById('syncStatus').innerText = msg; }
 
-    // פונקציה שמבטיחה הסתרה של מסכים אחרים
     function showScreen(id) {
         const screens = ['loginScreen', 'appScreen', 'adminScreen'];
         screens.forEach(s => document.getElementById(s).style.display = 'none');
@@ -89,9 +17,7 @@
     }
 
     async function loadData() {
-        // הצג מיד את מה שיש בזיכרון (מונע תקיעה על "מתחבר")
         renderLogin();
-
         try {
             const res = await fetch(`https://api.jsonbin.io/v3/b/${CONFIG.binId}/latest`, {
                 headers: { 'X-Master-Key': CONFIG.apiKey }
@@ -101,7 +27,7 @@
                 db = data.record;
                 localStorage.setItem('wt_db', JSON.stringify(db));
                 updateSyncStatus("✅ מחובר ומסונכרן");
-                renderLogin(); // עדכון הרשימה אם השתנתה בענן
+                renderLogin();
             }
         } catch (e) { 
             updateSyncStatus("⚠️ עובד במצב מקומי");
@@ -112,7 +38,7 @@
         const names = Object.keys(db);
         const select = document.getElementById('userSelect');
         select.innerHTML = names.map(n => `<option value="${n}">${n}</option>`).join('');
-        if (names.length === 0) select.innerHTML = '<option>אין משתמשים רשומים</option>';
+        if (names.length === 0) select.innerHTML = '<option disabled>אין משתמשים רשומים</option>';
         showScreen('loginScreen');
     }
 
@@ -129,9 +55,13 @@
         showScreen('appScreen');
         document.getElementById('userBadge').innerText = currentUser;
         document.getElementById('workDate').value = new Date().toISOString().split('T')[0];
+        
         const adminArea = document.getElementById('adminLinkArea');
-        adminArea.innerHTML = (currentUser === ADMIN_NAME) ? 
-            `<button class="btn btn-admin" onclick="showAdminReport()">דוח מנהל 📊</button>` : "";
+        if (currentUser === ADMIN_NAME) {
+            adminArea.innerHTML = `<button class="btn btn-admin" onclick="showAdminReport()">דוח מנהל 📊</button>`;
+        } else {
+            adminArea.innerHTML = "";
+        }
         renderHistory();
     }
 
@@ -140,13 +70,27 @@
         const start = document.getElementById('startTime').value;
         const end = document.getElementById('endTime').value;
         const rate = parseFloat(document.getElementById('hourlyRate').value);
+        
         if (!date || !start || !end) return alert("מלא פרטים");
 
-        const sTime = new Date(`${date}T${start}`);
-        let eTime = new Date(`${date}T${end}`);
-        if (eTime <= sTime) eTime.setDate(eTime.getDate() + 1);
+        const newStart = new Date(`${date}T${start}`);
+        let newEnd = new Date(`${date}T${end}`);
+        if (newEnd <= newStart) newEnd.setDate(newEnd.getDate() + 1);
 
-        const diff = (eTime - sTime) / (1000 * 60 * 60);
+        // בדיקת חפיפה - מניעת התנגשות בתאריכים ושעות
+        const existingShifts = db[currentUser].shifts || [];
+        for (let s of existingShifts) {
+            const sStart = new Date(`${s.date}T${s.start}`);
+            let sEnd = new Date(`${s.date}T${s.end}`);
+            if (sEnd <= sStart) sEnd.setDate(sEnd.getDate() + 1);
+
+            // בדיקה אם הזמנים חופפים
+            if ((newStart < sEnd) && (newEnd > sStart)) {
+                return alert(`⚠️ שגיאה: קיימת כבר משמרת חופפת בזמן הזה!\n(${s.date} בין ${s.start}-${s.end})`);
+            }
+        }
+
+        const diff = (newEnd - newStart) / (1000 * 60 * 60);
         const total = (diff * rate + diff * 2.29).toFixed(2);
         
         if (!db[currentUser].shifts) db[currentUser].shifts = [];
@@ -162,7 +106,7 @@
                 body: JSON.stringify(db)
             });
             updateSyncStatus("✅ נשמר בענן");
-        } catch(e) { updateSyncStatus("⚠️ נשמר מקומית בלבד"); }
+        } catch(e) { updateSyncStatus("⚠️ נשמר מקומית"); }
     }
 
     function renderHistory() {
@@ -191,13 +135,11 @@
         if (!n || !p) return alert("מלא שם וסיסמה");
         db[n] = { password: p, shifts: [] };
         localStorage.setItem('wt_db', JSON.stringify(db));
+        alert("✅ חשבון עבור " + n + " נוצר בהצלחה!");
         renderLogin();
     }
 
-    function logout() { location.reload(); }
+    function logout() { currentUser = null; location.reload(); }
 
-    // הפעלה
     loadData();
 </script>
-</body>
-</html>
