@@ -129,7 +129,6 @@
     async function saveDb() { 
         localStorage.setItem('wt_final_fixed_db', JSON.stringify(db));
         updateSyncStatus("מגבה נתונים בענן...");
-        
         try {
             await fetch(`https://api.jsonbin.io/v3/b/${CLOUD_CONFIG.binId}`, {
                 method: 'PUT',
@@ -138,7 +137,7 @@
             });
             updateSyncStatus("✅ המידע שמור בענן");
         } catch (e) {
-            updateSyncStatus("⚠️ שגיאת גיבוי (עובד מקומית)");
+            updateSyncStatus("⚠️ שגיאת גיבוי");
         }
     }
 
@@ -148,16 +147,16 @@
                 headers: { 'X-Master-Key': CLOUD_CONFIG.apiKey }
             });
             const data = await res.json();
-            if (data.record && Object.keys(data.record).length > 0) {
+            if (data.record) {
                 db = data.record;
+                // וודא שהמנהל קיים בבסיס הנתונים אם הוא ריק
+                if (!db[ADMIN]) db[ADMIN] = { password: "123", shifts: [], rate: 50 };
                 localStorage.setItem('wt_final_fixed_db', JSON.stringify(db));
-                updateSyncStatus("✅ נתונים סונכרנו מהענן");
-            } else {
-                updateSyncStatus("ענן ריק - מתחיל מאפס");
+                updateSyncStatus("✅ נתונים סונכרנו");
             }
             init();
         } catch (e) {
-            updateSyncStatus("מצב לא מקוון - טוען מהמכשיר");
+            updateSyncStatus("טוען מקומית...");
             init();
         }
     }
@@ -185,7 +184,12 @@
         document.getElementById('adminPanel').style.display = 'none';
         document.getElementById('app').style.display = 'block';
         document.getElementById('userNameBadge').innerText = (currentUser === ADMIN) ? "מנהל: " + currentUser : "עובד: " + currentUser;
-        document.getElementById('workDate').valueAsDate = new Date();
+        
+        // תיקון תאריך להיום לפי שעון ישראל
+        const now = new Date();
+        const offset = now.getTimezoneOffset() * 60000;
+        const localISODate = new Date(now - offset).toISOString().split('T')[0];
+        document.getElementById('workDate').value = localISODate;
         
         const navDiv = document.getElementById('navButtons');
         const adminEntry = document.getElementById('adminEntryArea');
@@ -215,11 +219,17 @@
 
         if(!dateInput || !start || !end) return alert("נא למלא תאריך ושעות");
 
-        const today = new Date(); today.setHours(0,0,0,0);
-        if (new Date(dateInput) > today) return alert("לא ניתן לרשום משמרת לעתיד!");
+        // תיקון בדיקת תאריך עתידי - השוואה לפי מחרוזת תאריך בלבד
+        const now = new Date();
+        const offset = now.getTimezoneOffset() * 60000;
+        const todayStr = new Date(now - offset).toISOString().split('T')[0];
+        
+        if (dateInput > todayStr) {
+            return alert("לא ניתן לרשום משמרת לעתיד!");
+        }
 
         const newStart = new Date(`${dateInput}T${start}`);
-        const newEnd = new Date(`${dateInput}T${end}`);
+        let newEnd = new Date(`${dateInput}T${end}`);
         if (newEnd <= newStart) newEnd.setDate(newEnd.getDate() + 1);
 
         const shifts = db[currentUser].shifts;
@@ -227,9 +237,9 @@
             if (i === editIdx) continue;
             const s = shifts[i];
             const existStart = new Date(`${s.date}T${s.start}`);
-            const existEnd = new Date(`${s.date}T${s.end}`);
+            let existEnd = new Date(`${s.date}T${s.end}`);
             if (existEnd <= existStart) existEnd.setDate(existEnd.getDate() + 1);
-            if (newStart < existEnd && newEnd > existStart) return alert(`שגיאה: חפיפה עם משמרת קיימת!`);
+            if (newStart < existEnd && newEnd > existStart) return alert(`חפיפה עם משמרת קיימת!`);
         }
 
         let diff = (newEnd - newStart) / (1000 * 60 * 60);
@@ -290,7 +300,8 @@
         document.getElementById('adminPanel').style.display = 'block';
         const list = document.getElementById('adminUserList');
         list.innerHTML = Object.keys(db).map(name => {
-            const sum = db[name].shifts.reduce((a, b) => a + parseFloat(b.total), 0);
+            const shifts = db[name].shifts || [];
+            const sum = shifts.reduce((a, b) => a + parseFloat(b.total), 0);
             return `<div style="padding:10px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
                 <strong>${name} (₪${sum.toFixed(2)})</strong>
                 <button class="mini-btn" style="background:var(--primary)" onclick="adminEnterUser('${name}')">צפה</button>
